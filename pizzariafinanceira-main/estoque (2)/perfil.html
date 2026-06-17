@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - Finanças Pro</title>
+    <style>
+        :root {
+            --primary: #2ecc71; --dark: #2c3e50; --light: #ecf0f1;
+            --danger: #e74c3c; --info: #3498db; --warning: #f39c12; --bg-menu: #111827;
+            --border: #374151; --text-main: #f3f4f6; --bg-hover: #1f2937;
+            --bg-body: #1a1a2e;
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        body.tema-claro {
+            --bg-body: #e2e8f0;
+            color: #1a1a2e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s;
+        }
+
+        .menu-esquerdo { height: 100%; width: 0; position: fixed; z-index: 1001; top: 0; left: 0; background-color: var(--bg-menu); overflow-x: hidden; transition: 0.3s; padding-top: 60px; border-right: 1px solid var(--border); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+        .menu-esquerdo a { padding: 12px 24px; text-decoration: none; font-size: 16px; color: var(--text-main); display: block; transition: 0.2s; white-space: nowrap; }
+        .menu-esquerdo a:hover { background-color: var(--bg-hover); border-left: 4px solid var(--primary); }
+        .menu-esquerdo .btn-fechar { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; border: none !important; background: transparent; color: var(--text-main); }
+
+        #login-screen { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); text-align: center; width: 350px; z-index: 100; margin: auto; }
+        .hidden { display: none !important; }
+        .login-anim-out { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: rgba(255,255,255,0.2); color: white; box-sizing: border-box; }
+        body.tema-claro input { background: #fff; color: #333; border: 1px solid #ccc; }
+        input::placeholder { color: #ccc; }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { filter: brightness(1.2); transform: scale(1.02); }
+
+        .botao-acao { background: transparent; color: var(--dark); width: auto; font-size: 24px; padding: 5px; margin-top: 15px; }
+
+        #profile-screen { width: 90%; max-width: 800px; background: #f4f7f6; color: var(--dark); border-radius: 20px; padding: 30px; margin: 0 auto; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .header-finance { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 20px; }
+        
+        .balance-card { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; padding: 30px; border-radius: 15px; margin: 20px 0; box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3); transition: transform 0.2s; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .info-box { background: white; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; color: var(--dark); max-height: 90vh; overflow-y: auto;}
+        .modal-content input { background: #eee; color: #333; border: 1px solid #ccc;}
+
+        @media (max-width: 768px) {
+            #profile-screen, #login-screen { width: 95%; padding: 20px; box-sizing: border-box; margin: auto; }
+            .header-finance { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .botao-menu { position: absolute; top: 15px; right: 15px; margin: 0; }
+            .info-grid { grid-template-columns: 1fr; }
+            .info-box.full-span { grid-column: span 1 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menuLateral" class="menu-esquerdo">
+        <a href="javascript:void(0)" id="btnFechar" class="btn-fechar">&times;</a>
+        <a href="perfil.html">🏠 Perfil Financeiro</a>
+        <a href="index.html">🍕 Painel de Pedidos</a>
+        <a href="estoque.html">📦 Controle de Estoque</a>
+        <a href="integrações_delivery.html">🛵 Integrações Delivery</a>
+        <a href="javascript:void(0)" id="btnTema" style="margin-top: 20px;">
+            <span id="iconeSol">☀️ Modo Claro</span>
+            <span id="iconeLua" style="display: none;">🌙 Modo Escuro</span>
+        </a>
+    </div>
+
+    <div id="login-screen">
+        <h2 style="margin-bottom: 20px;">Finanças Pro</h2>
+        <p>Acesso Gerencial</p>
+        <input type="text" id="user" placeholder="Usuário (ex: ronan) ">
+        <input type="password" id="pass" placeholder="Senha">
+        <button onclick="login()">Entrar</button>
+        <p id="login-error" style="color: var(--danger); font-size: 14px; margin-top: 10px;"></p>
+    </div>
+
+    <div id="profile-screen" class="hidden">
+        <div class="header-finance">
+            <div>
+                <h2 style="margin:0">Bem-vindo, <span id="userName">Usuário</span></h2>
+                <small id="userCpf">Acesso Nível: Gerência</small>
+            </div>
+            <button onclick="logout()" style="width: auto; background: var(--danger); margin-top: 0;">Sair</button>
+        </div>
+        
+        <button id="btnAbrir" class="botao-acao botao-menu">
+            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
+        <div class="balance-card">
+            <span>Saldo Total Disponível (Soma dos Pedidos)</span>
+            <h1 id="userBalance" style="margin: 10px 0;">R$ 0,00</h1>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-box">
+                <strong>Idade:</strong> <span id="userIdade">--</span> anos
+            </div>
+            <div class="info-box">
+                <strong>Total de Lançamentos:</strong> <span id="userOrders">0</span>
+            </div>
+            <div class="info-box full-span" style="grid-column: span 2; border-left-color: var(--warning);">
+                <strong>Estoque Atual:</strong> <span id="estoqueAtual">--</span> 
+            </div>
+        </div>
+
+        <button onclick="openModal()" style="margin-top: 30px; background: var(--dark);">Editar Perfil e Estoque</button>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0;">Editar Perfil</h3>
+            <label>Nome Completo:</label> <input type="text" id="editNome">
+            <label>Idade:</label> <input type="number" id="editIdade">
+            <label>Acertar Saldo (R$):</label> <input type="number" id="editSaldo" step="0.01">
+            <label>Lançamentos (Ajuste):</label> <input type="number" id="editOrders">
+            
+            <label style="color: var(--warning); font-weight: bold;">Estoque (Itens):</label> 
+            <input type="number" id="editEstoque" style="border: 1px solid var(--warning);">
+            
+            <button onclick="saveData()">Salvar Alterações</button>
+            <button onclick="closeModal()" style="background: #95a5a6; margin-top: 5px;">Cancelar</button>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="Java.js"></script>
+</body>
+</html>

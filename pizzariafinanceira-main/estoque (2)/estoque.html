@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque Detalhado</title>
+    <style>
+        :root {
+            --primary: #2ecc71; --danger: #e74c3c; --warning: #f39c12;
+            --info: #3498db; --bg-body: #1a1a2e; --bg-panel: #162447; 
+            --bg-card: #1f4068; --text-main: #ffffff; --text-muted: #a0aec0; 
+            --border-color: #2b3a55; --bg-menu: #111827; --text-menu: #f3f4f6; 
+            --bg-hover: #1f2937;
+        }
+
+        body.tema-claro {
+            --bg-body: #e2e8f0; --bg-panel: #f4f7f6; --bg-card: #ffffff;
+            --text-main: #2c3e50; --border-color: #ddd;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; display: flex; padding: 20px 0; min-height: 100vh;}
+        
+        .menu-esquerdo { height: 100%; width: 0; position: fixed; z-index: 1001; top: 0; left: 0; background-color: var(--bg-menu); overflow-x: hidden; transition: 0.3s; padding-top: 60px; border-right: 1px solid var(--border-color); }
+        .menu-esquerdo a { padding: 12px 24px; text-decoration: none; font-size: 16px; color: var(--text-menu); display: block; transition: 0.2s; }
+        .menu-esquerdo a:hover { background-color: var(--bg-hover); border-left: 4px solid var(--primary); }
+        .menu-esquerdo .btn-fechar { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; color: var(--text-menu); }
+
+        .container { width: 95%; max-width: 900px; background: var(--bg-panel); padding: 30px; border-radius: 20px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
+        
+        .form-estoque { display: flex; gap: 10px; margin-bottom: 30px; background: var(--bg-card); padding: 20px; border-radius: 10px; }
+        .form-estoque input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-main); }
+        body.tema-claro .form-estoque input { background: #fff; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        button:hover { filter: brightness(1.1); }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; background: var(--bg-card); border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; border-bottom: 1px solid var(--border-color); }
+        th { background-color: rgba(0,0,0,0.2); }
+        .action-buttons { display: flex; gap: 5px; }
+
+        @media (max-width: 768px) {
+            .form-estoque { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menuLateral" class="menu-esquerdo">
+        <a href="javascript:void(0)" id="btnFechar" class="btn-fechar">&times;</a>
+        <a href="perfil.html">🏠 Perfil Financeiro</a>
+        <a href="index.html">🍕 Painel de Pedidos</a>
+        <a href="estoque.html">📦 Controle de Estoque</a> <a href="integrações_delivery.html">🛵 Integrações Delivery</a>
+        <a href="javascript:void(0)" id="btnTema" style="margin-top: 20px;">
+            <span id="iconeSol">☀️ Modo Claro</span>
+            <span id="iconeLua" style="display: none;">🌙 Modo Escuro</span>
+        </a>
+    </div>
+
+    <main class="container">
+        <div class="header">
+            <div>
+                <h2 style="margin:0">Gestão de Estoque</h2>
+                <small>Total em Estoque: <span id="estoqueAtual" style="color:var(--primary); font-weight:bold;">0</span></small>
+            </div>
+            <button id="btnAbrir" style="background: transparent; border: 1px solid var(--border-color); font-size: 20px;">☰ Menu</button>
+        </div>
+
+      <div class="form-estoque">
+            <input type="text" id="itemNome" placeholder="Nome do Item (Ex: Coca Cola 2L)">
+            <input type="number" id="itemQtd" placeholder="Quantidade" min="1" style="max-width: 150px;">
+            <button onclick="adicionarItemEstoque()">+ Adicionar Item</button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="buscaEstoque" placeholder="🔍 Procurar item no estoque..." onkeyup="filtrarEstoque()" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 16px; box-sizing: border-box;">
+        </div>
+
+        <table>
+            <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaEstoque">
+                </tbody>
+        </table>
+    </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="Java.js"></script>
+</body>
+</html>
