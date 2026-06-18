@@ -2,8 +2,8 @@
 // 1. LIGAÇÃO AO SUPABASE
 // ==========================================
 // ATENÇÃO: Substitua pelas suas credenciais reais do Supabase (Project Settings > API)
-const supabaseUrl = 'SUA_URL_AQUI'; 
-const supabaseKey = 'SUA_CHAVE_ANONIMA_AQUI'; 
+const supabaseUrl = 'https://vnerobezclyvtmverjxs.supabase.co'; 
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuZXJvYmV6Y2x5dnRtdmVyanhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzQ0MjQsImV4cCI6MjA5NjYxMDQyNH0.Rhurtp-B-qXWeCV8vWeAp3m-YR-fKFkco2y2EZpMUXU'; 
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let idEdicaoAtual = null;
