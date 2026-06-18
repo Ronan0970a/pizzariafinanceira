@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pizzaria Preço Baixo - Painel</title>
+    <title>Integrações Delivery - Pizzaria Preço Baixo</title>
     <style>
         :root {
             --primary: #2ecc71; --danger: #e74c3c; --warning: #f39c12;
@@ -101,8 +101,8 @@
     <main id="profile-screen">
         <div class="header-finance">
             <div>
-                <h2 style="margin:0">Painel Principal</h2>
-                <small>Visão Geral</small>
+                <h2 style="margin:0">Integrações Delivery</h2>
+                <small>Gestão de Fila e Entregadores</small>
             </div>
         </div>
         
@@ -111,24 +111,24 @@
         </button>
 
         <div class="header">
-            <h1>Controle de Pedidos Ativos</h1>
+            <h1>Acompanhamento e Expedição</h1>
             <button onclick="abrirModalPedido()" style="width: auto; background: var(--primary);">
-                + Novo Pedido Manual
+                + Inserir Delivery Manual
             </button>
         </div>
 
         <div class="grade-de-status">
-            <div class="cartao">
-                <h3>Estoque (Sincronizado)</h3>
-                <div class="value" id="estoqueAtual">2000 <small style="font-size: 0.8rem">itens</small></div>
+            <div class="cartao" style="border-left-color: var(--danger)">
+                <h3>Atrasados</h3>
+                <div class="value">0</div>
             </div>
-            <div class="cartao">
-                <h3>Total de Pedidos</h3>
+            <div class="cartao" style="border-left-color: var(--info)">
+                <h3>Em Rota de Entrega</h3>
+                <div class="value">8</div>
+            </div>
+            <div class="cartao" style="border-left-color: var(--primary)">
+                <h3>Total de Pedidos Entregues</h3>
                 <div class="value" id="contadorPedidos">0</div>
-            </div>
-            <div class="cartao">
-                <h3>Média de tempo</h3>
-                <div class="value">18 min</div>
             </div>
         </div>
 
@@ -136,9 +136,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Cliente / Canal</th>
-                        <th>Resumo</th>
+                        <th>ID Pedido</th>
+                        <th>Canal / Cliente</th>
+                        <th>Detalhes do Pedido</th>
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
@@ -191,7 +191,7 @@
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script src="Java.js"></script>
 </body>
