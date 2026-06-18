@@ -1,23 +1,15 @@
 // ==========================================
-// 1. INICIALIZAÇÃO GERAL E SINCRONIZAÇÃO
+// 1. LIGAÇÃO AO SUPABASE
 // ==========================================
-const DB_KEY = "finance_user_data";
-const defaultFinanceData = {
-    nome: "Admin Pizzaria",
-    idade: 30,
-    cpf: "123.456.789-00",
-    saldo: 0.00,
-    pedidos: 0,
-    estoque: 2000, 
-    pass: "123",
-    user: "admin"
-};
+const supabaseUrl = 'SUA_URL_AQUI'; // EX: https://abcdefghijklm.supabase.co
+const supabaseKey = 'SUA_CHAVE_ANONIMA_AQUI'; // A chave longa "anon public"
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-document.addEventListener("DOMContentLoaded", () => {
-    if(!localStorage.getItem(DB_KEY)) {
-        localStorage.setItem(DB_KEY, JSON.stringify(defaultFinanceData));
-    }
-
+// ==========================================
+// 2. INICIALIZAÇÃO GERAL E UI
+// ==========================================
+document.addEventListener("DOMContentLoaded", async () => {
+    // Configurações do Menu e Tema
     const menuLateral = document.getElementById("menuLateral");
     const btnAbrir = document.getElementById("btnAbrir");
     const btnFechar = document.getElementById("btnFechar");
@@ -41,305 +33,151 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (document.getElementById('userName')) updateUI(); 
-    if (document.getElementById('tabelaPedidos')) renderizarTabela(); 
-});
-
-window.addEventListener('storage', function(event) {
-    if (event.key === DB_KEY && document.getElementById('userName')) updateUI();
-    if (event.key === DB_KEY && document.getElementById('tabelaPedidos')) renderizarTabela();
-    if (event.key === 'pedidosPizzaria' && document.getElementById('tabelaPedidos')) {
-        pedidosSalvos = JSON.parse(localStorage.getItem('pedidosPizzaria')) || [];
-        renderizarTabela();
+    // Carregar dados da Nuvem ao entrar na página
+    if (document.getElementById('userName')) await carregarPerfilNuvem(); 
+    if (document.getElementById('tabelaEstoque')) {
+        await renderizarTabelaEstoque();
+        await atualizarEstoqueGlobalNuvem();
     }
 });
 
 // ==========================================
-// 2. SISTEMA DE LOGIN E PERFIL
+// 3. PERFIL E FINANÇAS (VIA SUPABASE)
 // ==========================================
-function getDB() {
-    const data = localStorage.getItem(DB_KEY);
-    return data ? JSON.parse(data) : defaultFinanceData;
-}
-
-const usuariosPermitidos = [
-    { user: "admin", pass: "123", nome: "Administrador" },
-    { user: "ronan", pass: "123456", nome: "Ronan" },
-    { user: "juliana", pass: "12345", nome: "Juliana" }
-];
-
-function login() {
-    const userIn = document.getElementById('user')?.value.toLowerCase();
-    const passIn = document.getElementById('pass')?.value;
-    const usuarioLogado = usuariosPermitidos.find(u => u.user === userIn && u.pass === passIn);
-
-    if(usuarioLogado) {
-        document.getElementById('login-screen').classList.add('login-anim-out');
-        localStorage.setItem("usuarioAtivo", usuarioLogado.nome);
-        setTimeout(() => {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('profile-screen').classList.remove('hidden');
-            if (document.getElementById('userName')) updateUI();
-            if (document.getElementById('tabelaPedidos')) renderizarTabela();
-        }, 400);
-    } else {
-        const err = document.getElementById('login-error');
-        if(err) err.innerText = "Usuário ou senha incorretos!";
-    }
-}
-
-function logout() { 
-    localStorage.removeItem("usuarioAtivo"); 
-    location.reload(); 
-}
-
-function updateUI() {
-    const db = getDB();
-    const elName = document.getElementById('userName');
-    if(!elName) return; 
-
-    const nomeAtual = localStorage.getItem("usuarioAtivo") || "Visitante";
-    elName.innerText = nomeAtual;
-    document.getElementById('userCpf').innerText = "CPF: " + db.cpf;
-    document.getElementById('userIdade').innerText = db.idade;
-    document.getElementById('userOrders').innerText = db.pedidos;
-    document.getElementById('userBalance').innerText = db.saldo.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'});
+async function carregarPerfilNuvem() {
+    // Vai buscar a linha de id 1 na tabela perfil_financeiro
+    const { data, error } = await supabase.from('perfil_financeiro').select('*').eq('id', 1).single();
     
-    // Atualiza o estoque visual na página de perfil
-    const estoqueVisual = document.getElementById('estoqueAtual');
-    if(estoqueVisual) estoqueVisual.innerHTML = `${db.estoque} <small style="font-size: 0.8rem">itens</small>`;
-}
-
-function openModal() {
-    const db = getDB();
-    const nomeAtual = localStorage.getItem("usuarioAtivo") || db.nome;
-
-    document.getElementById('editNome').value = nomeAtual;
-    document.getElementById('editIdade').value = db.idade;
-    document.getElementById('editSaldo').value = db.saldo;
-    document.getElementById('editOrders').value = db.pedidos;
-    
-    const editEstoque = document.getElementById('editEstoque');
-    if(editEstoque) editEstoque.value = db.estoque;
-
-    document.getElementById('editModal').style.display = 'flex';
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function saveData() {
-    const db = getDB();
-    const novoNome = document.getElementById('editNome').value;
-    
-    db.nome = novoNome;
-    db.idade = document.getElementById('editIdade').value;
-    db.saldo = parseFloat(document.getElementById('editSaldo').value);
-    db.pedidos = document.getElementById('editOrders').value;
-    
-    const editEstoque = document.getElementById('editEstoque');
-    if(editEstoque) db.estoque = parseInt(editEstoque.value);
-    
-    localStorage.setItem("usuarioAtivo", novoNome);
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    
-    updateUI();
-    closeModal();
-    alert("Perfil e Estoque atualizados com sucesso!");
-}
-
-// ==========================================
-// 3. SISTEMA DE PEDIDOS E ESTOQUE
-// ==========================================
-let pedidosSalvos = JSON.parse(localStorage.getItem('pedidosPizzaria')) || [];
-let idEdicaoAtual = null;
-
-function renderizarTabela() {
-    const tbody = document.getElementById('tabelaPedidos');
-    if (!tbody) return;
-
-    tbody.innerHTML = ''; 
-    const pedidosReversos = [...pedidosSalvos].reverse();
-
-    pedidosReversos.forEach((pedido) => {
-        const novaLinha = document.createElement('tr');
-        let badgeStatus = '';
-        if(pedido.status === 'Fila') badgeStatus = '<span class="badge status-picking">Fila / Espera</span>';
-        if(pedido.status === 'Entregue') badgeStatus = '<span class="badge status-done">Entregue</span>';
-
-        novaLinha.innerHTML = `
-            <td>${pedido.id}</td>
-            <td>${pedido.canal}<br><span class="integration-tag" style="background:var(--primary);color:white">${pedido.tag}</span><br><b>${pedido.nome}</b></td>
-            <td><div class="resumo-pedido">${pedido.resumoTexto}<br>End: ${pedido.end}</div></td>
-            <td>${badgeStatus}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn-confirm" onclick="mudarStatus('${pedido.id}', 'Entregue')">Entregue</button>
-                    <button class="btn-wait" onclick="mudarStatus('${pedido.id}', 'Fila')">Fila</button>
-                    <button class="btn-edit" onclick="abrirModalPedido('${pedido.id}')">Editar</button>
-                    <button class="btn-danger" style="background: var(--danger); color: white;" onclick="excluirPedido('${pedido.id}')">Excluir</button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(novaLinha);
-    });
-
-    const contador = document.getElementById('contadorPedidos');
-    if (contador) contador.innerText = pedidosSalvos.length;
-
-    const db = getDB();
-    const estoqueAtual = document.getElementById('estoqueAtual');
-    if (estoqueAtual) {
-        estoqueAtual.innerHTML = `${db.estoque} <small style="font-size: 0.8rem">itens</small>`;
-    }
-}
-
-function abrirModalPedido(id = null) {
-    const modal = document.getElementById('modalPedido');
-    const title = document.getElementById('modalTitle');
-    
-    if (id) {
-        title.innerText = "Editar Pedido";
-        idEdicaoAtual = id;
-        const pedido = pedidosSalvos.find(p => p.id === id);
-        
-        document.getElementById('p_nome').value = pedido.nome;
-        document.getElementById('p_end').value = pedido.end;
-        document.getElementById('p_pagamento').value = pedido.pag;
-        document.getElementById('p_sabor').value = pedido.sabor;
-        document.getElementById('p_tamanho').value = pedido.tamBruto;
-        document.getElementById('p_bebida').value = pedido.bebBruta;
-    } else {
-        title.innerText = "Novo Pedido Manual";
-        idEdicaoAtual = null;
-        limparFormularioPedido();
-    }
-    modal.classList.add('active');
-}
-
-function fecharModalPedido() {
-    document.getElementById('modalPedido').classList.remove('active');
-    limparFormularioPedido();
-}
-
-function limparFormularioPedido() {
-    document.getElementById('p_nome').value = '';
-    document.getElementById('p_end').value = '';
-    document.getElementById('p_pagamento').value = '';
-    document.getElementById('p_sabor').value = '';
-    document.getElementById('p_tamanho').value = '';
-    document.getElementById('p_bebida').value = 'Nenhuma|0';
-}
-
-function salvarPedido() {
-    const nome = document.getElementById('p_nome').value;
-    const end = document.getElementById('p_end').value;
-    const pag = document.getElementById('p_pagamento').value;
-    const sabor = document.getElementById('p_sabor').value;
-    const tamanhoBruto = document.getElementById('p_tamanho').value;
-    const bebidaBruta = document.getElementById('p_bebida').value;
-
-    if (!nome || !end || !pag || !sabor || !tamanhoBruto) {
-        alert("Por favor, preencha os campos essenciais.");
+    if (error) {
+        console.error("Erro ao carregar perfil:", error);
         return;
     }
 
-    const [tamNome, tamValor] = tamanhoBruto.split('|');
-    const [bebNome, bebValor] = bebidaBruta.split('|');
-    const total = parseFloat(tamValor) + parseFloat(bebValor);
+    if (document.getElementById('userName')) document.getElementById('userName').innerText = data.nome;
+    if (document.getElementById('userCpf')) document.getElementById('userCpf').innerText = "CPF: " + data.cpf;
+    if (document.getElementById('userIdade')) document.getElementById('userIdade').innerText = data.idade;
+    if (document.getElementById('userOrders')) document.getElementById('userOrders').innerText = data.pedidos_total;
+    if (document.getElementById('userBalance')) document.getElementById('userBalance').innerText = data.saldo.toLocaleString('pt-br', {style: 'currency', currency: 'BRL'});
     
-    const resumo = `Pizza ${sabor} (${tamNome}) <br> ${bebNome !== 'Nenhuma' ? '+ ' + bebNome + '<br>' : ''} <b>Total: R$ ${total.toFixed(2)}</b> <br> <small>Pagamento: ${pag}</small>`;
-    const atendente = localStorage.getItem("usuarioAtivo") || "Balcão";
+    const estoqueVisual = document.getElementById('estoqueAtual');
+    if(estoqueVisual) estoqueVisual.innerHTML = `${data.estoque_total} <small style="font-size: 0.8rem">itens</small>`;
+}
 
-    let financeDb = getDB();
+// ==========================================
+// 4. CONTROLE DE ESTOQUE DETALHADO (VIA SUPABASE)
+// ==========================================
 
-    if (idEdicaoAtual) {
-        const index = pedidosSalvos.findIndex(p => p.id === idEdicaoAtual);
-        const pedidoAntigo = pedidosSalvos[index];
-        
-        // Pega os valores antigos para ver se tem que dar/tirar mais dinheiro e estoque
-        const [oldTamNome, oldTamValor] = pedidoAntigo.tamBruto.split('|');
-        const [oldBebNome, oldBebValor] = pedidoAntigo.bebBruta.split('|');
-        const oldTotal = parseFloat(oldTamValor) + parseFloat(oldBebValor);
-        
-        let oldItensConsumidos = 1;
-        if(oldBebNome !== 'Nenhuma') oldItensConsumidos += 1;
+// Puxa a lista de itens diretamente do banco de dados na nuvem
+async function getListaEstoqueNuvem() {
+    const { data, error } = await supabase.from('estoque_itens').select('*').order('nome', { ascending: true });
+    if (error) console.error("Erro ao buscar estoque:", error);
+    return data || [];
+}
 
-        let novosItensConsumidos = 1;
-        if(bebNome !== 'Nenhuma') novosItensConsumidos += 1;
+// Atualiza o saldo global de itens na tabela de perfil
+async function atualizarEstoqueGlobalNuvem() {
+    const lista = await getListaEstoqueNuvem();
+    const totalItens = lista.reduce((acc, item) => acc + item.quantidade, 0);
+    
+    // Atualiza o total na nuvem
+    await supabase.from('perfil_financeiro').update({ estoque_total: totalItens }).eq('id', 1);
+    
+    // Atualiza visualmente
+    const displayEstoque = document.getElementById('estoqueAtual');
+    if (displayEstoque) {
+        displayEstoque.innerHTML = `${totalItens} <small style="font-size: 0.8rem">itens</small>`;
+    }
+}
 
-        // Calcula a diferença e atualiza o banco
-        financeDb.saldo = parseFloat(financeDb.saldo) + (total - oldTotal);
-        financeDb.estoque = parseInt(financeDb.estoque) - (novosItensConsumidos - oldItensConsumidos);
-        localStorage.setItem(DB_KEY, JSON.stringify(financeDb));
+// Função para adicionar Item (Agora fala com a Nuvem)
+async function adicionarItemEstoque() {
+    const nome = document.getElementById('itemNome').value.trim();
+    const qtd = parseInt(document.getElementById('itemQtd').value);
 
-        pedidosSalvos[index] = {
-            ...pedidosSalvos[index],
-            nome: nome, end: end, pag: pag, sabor: sabor,
-            tamBruto: tamanhoBruto, bebBruta: bebidaBruta,
-            resumoTexto: resumo, tag: "Editado"
-        };
+    if(!nome || isNaN(qtd) || qtd <= 0) {
+        alert("Preencha um nome e uma quantidade válida maior que zero.");
+        return;
+    }
+
+    // Verifica se o item já existe na nuvem
+    const { data: itemExistente } = await supabase.from('estoque_itens').select('*').ilike('nome', nome).single();
+
+    if (itemExistente) {
+        // Se existe, soma a quantidade
+        const novaQtd = itemExistente.quantidade + qtd;
+        await supabase.from('estoque_itens').update({ quantidade: novaQtd }).eq('id', itemExistente.id);
     } else {
-        const novoPedido = {
-            id: "#" + Math.floor(Math.random() * 9000 + 1000),
-            canal: atendente,
-            tag: "Novo", status: "Fila",
-            nome: nome, end: end, pag: pag, sabor: sabor,
-            tamBruto: tamanhoBruto, bebBruta: bebidaBruta,
-            resumoTexto: resumo
-        };
-        pedidosSalvos.push(novoPedido);
-
-        let itensConsumidos = 1; 
-        if(bebNome !== 'Nenhuma') itensConsumidos += 1;
-
-        financeDb.saldo = parseFloat(financeDb.saldo) + total;
-        financeDb.pedidos = parseInt(financeDb.pedidos) + 1;
-        financeDb.estoque = parseInt(financeDb.estoque) - itensConsumidos; 
-        localStorage.setItem(DB_KEY, JSON.stringify(financeDb));
+        // Se não existe, insere um novo
+        await supabase.from('estoque_itens').insert([{ nome: nome, quantidade: qtd }]);
     }
 
-    localStorage.setItem('pedidosPizzaria', JSON.stringify(pedidosSalvos));
-    renderizarTabela();
-    if (document.getElementById('userName')) updateUI(); // Atualiza painel caso esteja no perfil
-    fecharModalPedido();
+    // Limpa campos e atualiza ecrã
+    document.getElementById('itemNome').value = '';
+    document.getElementById('itemQtd').value = '';
+    
+    await renderizarTabelaEstoque();
+    await atualizarEstoqueGlobalNuvem();
 }
 
-function mudarStatus(id, novoStatus) {
-    const index = pedidosSalvos.findIndex(p => p.id === id);
-    if(index !== -1) {
-        pedidosSalvos[index].status = novoStatus;
-        localStorage.setItem('pedidosPizzaria', JSON.stringify(pedidosSalvos));
-        renderizarTabela();
+// Remove quantidade ou exclui o item na nuvem
+async function removerQuantidadeItem(id, qtdAtual, qtdRemover) {
+    const novaQtd = qtdAtual - qtdRemover;
+
+    if (novaQtd <= 0) {
+        // Apaga do banco de dados
+        await supabase.from('estoque_itens').delete().eq('id', id);
+    } else {
+        // Atualiza a nova quantidade
+        await supabase.from('estoque_itens').update({ quantidade: novaQtd }).eq('id', id);
     }
+
+    await renderizarTabelaEstoque();
+    await atualizarEstoqueGlobalNuvem();
 }
 
-// Excluir Pedido e Repor o Estoque/Caixa
-function excluirPedido(id) {
-    if (confirm("Tem a certeza que deseja excluir este pedido? O valor será descontado do caixa e os itens repostos no stock.")) {
-        const index = pedidosSalvos.findIndex(p => p.id === id);
-        if (index !== -1) {
-            const pedidoAExcluir = pedidosSalvos[index];
-            
-            const [tamNome, tamValor] = pedidoAExcluir.tamBruto.split('|');
-            const [bebNome, bebValor] = pedidoAExcluir.bebBruta.split('|');
-            const total = parseFloat(tamValor) + parseFloat(bebValor);
-            
-            let itensARepor = 1; 
-            if(bebNome !== 'Nenhuma') itensARepor += 1;
+// Desenha a tabela procurando na base de dados
+async function renderizarTabelaEstoque(termoBusca = "") {
+    const tbody = document.getElementById('tabelaEstoque');
+    if (!tbody) return;
 
-            let financeDb = getDB();
-            financeDb.saldo = parseFloat(financeDb.saldo) - total;
-            financeDb.pedidos = parseInt(financeDb.pedidos) - 1;
-            financeDb.estoque = parseInt(financeDb.estoque) + itensARepor; 
-            localStorage.setItem(DB_KEY, JSON.stringify(financeDb));
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">A carregar dados da nuvem... ⏳</td></tr>';
 
-            pedidosSalvos.splice(index, 1);
-            localStorage.setItem('pedidosPizzaria', JSON.stringify(pedidosSalvos));
-            
-            renderizarTabela();
-            if (document.getElementById('userName')) updateUI();
+    let query = supabase.from('estoque_itens').select('*').order('nome', { ascending: true });
+    
+    if (termoBusca !== "") {
+        query = query.ilike('nome', `%${termoBusca}%`); // Busca semelhante na nuvem
+    }
+
+    const { data: listaFiltrada, error } = await query;
+
+    tbody.innerHTML = '';
+
+    if(error || !listaFiltrada || listaFiltrada.length === 0) {
+        if (termoBusca !== "") {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">Nenhum item encontrado para "${termoBusca}".</td></tr>`;
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Estoque vazio. Adicione itens acima.</td></tr>';
         }
+        return;
     }
+
+    listaFiltrada.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.nome}</td>
+            <td style="color: var(--primary); font-weight: bold;">${item.quantidade} un</td>
+            <td>
+                <div class="action-buttons">
+                    <button onclick="removerQuantidadeItem(${item.id}, ${item.quantidade}, 1)" style="background: var(--warning); padding: 5px 10px;">-1</button>
+                    <button onclick="removerQuantidadeItem(${item.id}, ${item.quantidade}, ${item.quantidade})" style="background: var(--danger); padding: 5px 10px;">Excluir Tudo</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function filtrarEstoque() {
+    const termo = document.getElementById('buscaEstoque').value.trim();
+    renderizarTabelaEstoque(termo);
 }
